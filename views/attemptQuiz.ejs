@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="shortcut icon" href="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTAQHwjXyAiIxUCnh3-cFywq0K4ZmDFo20YAw&s">
+</head>
+<body class="bg-gray-100">
+  <nav class="bg-gray-800 p-4">
+    <div class="max-w-screen-xl p-2 sm:px-16 mx-auto flex justify-between items-center">
+        <div class="flex items-center space-x-4">
+            <a href="/" class="text-white text-lg font-semibold">
+              <a href="/" class="text-white text-lg font-semibold">
+                <img src="https://brainteaser.health/wp-content/uploads/2021/02/Brainteaser_LogoVertical_White.png" width="60px" alt="">
+              </a>
+            </a>
+        </div>
+        <div class="hidden md:flex items-center space-x-4 text-lg">
+            <a href="/" class="text-gray-300 hover:text-white">Home</a>
+            <% if (user && user.role !== 'user') { %>  
+            <a href="/admin/quiz" class="text-gray-300 hover:text-white">Admin</a>
+            <% } %>
+            <a href="/leaderboard" class="text-gray-300 hover:text-white">Results</a>
+            <a href="/profile" class="text-gray-300 hover:text-white">Profile</a>
+            <a href="/logout" class="text-gray-300 hover:text-white">Logout</a>
+        </div>
+        <div class="md:hidden">
+            <button id="menu-toggle" class="text-gray-300 focus:outline-none">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+                </svg>
+            </button>
+        </div>
+    </div>
+    <div id="menu" class="hidden md:hidden flex flex-col space-y-2 mt-2">
+        <a href="#" class="text-gray-300 hover:text-white">Home</a>
+        <a href="#quiz" class="text-gray-300 hover:text-white">Quiz</a>
+        <a href="#results" class="text-gray-300 hover:text-white">Results</a>
+        <a href="#feedback" class="text-gray-300 hover:text-white">Feedback</a>
+        <a href="#profile" class="text-gray-300 hover:text-white">Profile</a>
+    </div>
+  </nav>
+
+  <div class=" my-10 mx-auto p-4 max-w-screen-xl sm:px-16">
+    <div class="bg-white p-8 rounded-lg shadow-md flex space-x-4">
+      <!-- Quiz Form -->
+      <div class="w-3/5">
+        <div class="flex justify-between items-center mb-4">
+          <h1 class="text-2xl font-semibold">Quiz</h1>
+          <div id="score" class="text-xl font-semibold text-blue-600">
+            <!-- This will dynamically display the score -->
+          </div>
+        </div>
+
+        <form id="quizForm" action="/quiz/<%= quiz_id %>/attempt" method="POST" class="space-y-4">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+          <% questions.forEach((question) => { %>
+            <div class="p-4 bg-gray-50 rounded-lg shadow-md">
+              <p class="font-medium mb-2"><%= question.question %></p>
+
+              <div class="space-y-2">
+                <label class="block p-2 rounded">
+                  <input type="radio" name="answers[<%= question.id %>]" value="a" class="mr-2" required> 
+                  <span class="option-text"><%= question.option_a %></span>
+                </label>
+                <label class="block p-2 rounded">
+                  <input type="radio" name="answers[<%= question.id %>]" value="b" class="mr-2" required> 
+                  <span class="option-text"><%= question.option_b %></span>
+                </label>
+                <label class="block p-2 rounded">
+                  <input type="radio" name="answers[<%= question.id %>]" value="c" class="mr-2" required> 
+                  <span class="option-text"><%= question.option_c %></span>
+                </label>
+                <label class="block p-2 rounded">
+                  <input type="radio" name="answers[<%= question.id %>]" value="d" class="mr-2" required> 
+                  <span class="option-text"><%= question.option_d %></span>
+                </label>
+              </div>
+            </div>
+          <% }) %>
+
+          <button type="submit" class="w-full py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 transition duration-300">Submit</button>
+        </form>
+      </div>
+
+      <!-- Feedback Section -->
+      <div id="feedback" class="w-2/5 bg-green-50 p-4 rounded-lg hidden">
+        <h2 class="text-lg font-semibold">Feedback</h2>
+        <p id="feedbackContent" class="mt-2 text-sm text-gray-700"></p>
+
+        <section style="height: 300px;">
+          <canvas id="myChart" class="my-4 h-full" style="height: 300px;"></canvas>
+        </section>
+
+      </div>
+    </div> 
+    
+  </div>
+
+  <script>
+    document.getElementById('quizForm').addEventListener('submit', async function(event) {
+      event.preventDefault(); 
+  
+      const formData = new FormData(this);  
+      const response = await fetch(this.action, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',  
+        },
+        body: new URLSearchParams(formData)
+      });
+  
+      const result = await response.json();
+  
+      document.querySelectorAll('label').forEach(label => {
+        label.classList.remove('bg-emerald-200', 'bg-red-200');
+      });
+  
+      // Initialize score to 0
+      let score = 0;
+  
+      // Highlight the options based on the correct and user-selected answers
+      result.correctAnswers.forEach((correctAnswer) => {
+        const questionId = correctAnswer.id;
+        const correctOption = correctAnswer.correct_answer;
+  
+        const selectedOption = formData.get(`answers[${questionId}]`);
+  
+        // Highlight the user's selected answer
+        document.querySelectorAll(`input[name="answers[${questionId}]"]`).forEach(input => {
+          const label = input.closest('label');
+  
+          if (input.value === selectedOption) {
+            if (input.value === correctOption) {
+              label.classList.add('bg-emerald-200'); // Correct answer
+              score++; // Increase score if correct
+            } else {
+              label.classList.add('bg-red-200'); // Incorrect answer
+            }
+          }
+  
+          // Highlight the correct answer
+          if (input.value === correctOption) {
+            label.classList.add('bg-emerald-200');
+          }
+        });
+      });
+  
+      // Show the score in the top right
+      document.getElementById('score').textContent = `Score: ${score}/${result.totalQuestions}`;
+  
+      // Calculate the percentage
+      const percentage = Math.round((score / result.totalQuestions) * 100);
+  
+      // Update the pie chart data
+      myChart.data.datasets[0].data = [100 - percentage, percentage]; // Remaining and Scored
+      myChart.update();  // Re-render the chart
+  
+      // Display feedback
+      if (result.feedback) {
+        document.getElementById('feedback').classList.remove('hidden');
+        document.getElementById('feedbackContent').textContent = result.feedback;
+      }
+    });
+  
+    // Initialize the pie chart
+    var ctx = document.getElementById('myChart').getContext('2d');
+    var myChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: ['Remaining', 'Scored'],
+            datasets: [{
+                data: [100, 0],  // Initially, 100% remaining, 0% scored
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.7)', // Red for Remaining
+                    'rgba(54, 162, 235, 0.7)', // Blue for Scored
+                ],
+                borderColor: [
+                    'rgba(255, 99, 132, 1)', // Red border
+                    'rgba(54, 162, 235, 1)', // Blue border
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            legend: {
+                position: 'bottom',
+                labels: {
+                    fontColor: 'black',
+                    fontSize: 14,
+                    padding: 20
+                }
+            }
+        }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quizzes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="shortcut icon" href="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTAQHwjXyAiIxUCnh3-cFywq0K4ZmDFo20YAw&s">
+</head>
+<body class="bg-gray-100">
+
+  <nav class="bg-gray-800 p-4">
+    <div class="max-w-screen-xl p-2 sm:px-16 mx-auto flex justify-between items-center">
+        <div class="flex items-center space-x-4">
+            <a href="/" class="text-white text-lg font-semibold">
+              <a href="/" class="text-white text-lg font-semibold">
+                <img src="https://brainteaser.health/wp-content/uploads/2021/02/Brainteaser_LogoVertical_White.png" width="60px" alt="">
+              </a>
+            </a>
+        </div>
+        <div class="hidden md:flex items-center space-x-4 text-lg">
+            <a href="/" class="text-gray-300 hover:text-white">Home</a>
+            <% if (user && user.role !== 'user') { %>  
+            <a href="/admin/quiz" class="text-gray-300 hover:text-white">Admin</a>
+            <% } %>
+            <a href="/leaderboard" class="text-gray-300 hover:text-white">Results</a>
+            <a href="/profile" class="text-gray-300 hover:text-white">Profile</a>
+            <a href="/logout" class="text-gray-300 hover:text-white">Logout</a>
+        </div>
+        <div class="md:hidden">
+            <button id="menu-toggle" class="text-gray-300 focus:outline-none">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+                </svg>
+            </button>
+        </div>
+    </div>
+    <div id="menu" class="hidden md:hidden flex flex-col space-y-2 mt-2">
+        <a href="#" class="text-gray-300 hover:text-white">Home</a>
+        <a href="#quiz" class="text-gray-300 hover:text-white">Quiz</a>
+        <a href="#results" class="text-gray-300 hover:text-white">Results</a>
+        <a href="#feedback" class="text-gray-300 hover:text-white">Feedback</a>
+        <a href="#profile" class="text-gray-300 hover:text-white">Profile</a>
+    </div>
+  </nav>
+
+  <div class="max-w-screen-xl p-4 sm:px-16 mx-auto py-6">
+    <h1 class="text-2xl font-semibold mb-4">All Quizzes</h1>
+
+    <!-- Sidebar with circular bar showing quizzes attempted -->
+    <div class="flex space-x-6">
+      <div class="bg-white rounded-lg p-4 mb-6 text-center" style="width: 20vw;">
+        <!-- Attempted Quizzes Progress Circular Bar -->
+        <div class="text-center">
+          <h1 class="text-xl py-4 font-semibold test-start">Quiz Analytics</h1>
+          <div class="relative w-32 h-32 mx-auto">
+            <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+              <circle class="text-gray-300" stroke-width="4" stroke="currentColor" fill="none" r="16" cx="18" cy="18" />
+              <circle 
+                class="text-blue-600" 
+                stroke-width="4" 
+                stroke="currentColor" 
+                fill="none" 
+                r="16" 
+                cx="18" 
+                cy="18"
+                stroke-dasharray="100" 
+                stroke-dashoffset="<%= 100 - ((quizzesAttempted / totalQuizzes) * 100) %>" 
+                stroke-linecap="round" 
+              />
+            </svg>
+            <div class="absolute inset-0 flex items-center justify-center">
+              <span class="text-xl font-semibold text-blue-600"><%= ((quizzesAttempted / totalQuizzes) * 100).toFixed(0) %>%</span>
+            </div>
+          </div>
+          <p class="mt-2 text-gray-700 font-semibold">Quizzes Attempted</p>
+          <p><%= quizzesAttempted %> out of <%= totalQuizzes %></p>
+        </div>
+    
+        <!-- Average Accuracy Circular Bar -->
+        <div class="text-center">
+          <div class="relative w-32 h-32 mx-auto mt-8">
+            <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+              <circle class="text-gray-300" stroke-width="4" stroke="currentColor" fill="none" r="16" cx="18" cy="18" />
+              <circle 
+                class="text-green-500" 
+                stroke-width="4" 
+                stroke="currentColor" 
+                fill="none" 
+                r="16" 
+                cx="18" 
+                cy="18"
+                stroke-dasharray="100" 
+                stroke-dashoffset="<%= 100 - averageAccuracy %>" 
+                stroke-linecap="round" 
+              />
+            </svg>
+            <div class="absolute inset-0 flex items-center justify-center">
+              <span class="text-xl font-semibold text-green-500"><%= averageAccuracy !== null ? averageAccuracy : '0' %>%</span>
+            </div>
+          </div>
+          <p class="mt-2 text-gray-700 font-semibold">Average Accuracy</p>
+        </div>
+      </div>
+    
+      <!-- Quizzes list -->
+      <div class="bg-white shadow-md rounded-lg p-4" style="width: 70vw;">
+        <% if (quizzes.length > 0) { %>
+          <ul class="space-y-4">
+            <% quizzes.forEach((quiz, index) => { %>
+              <li class="p-4 bg-gray-50 rounded-lg shadow flex justify-between items-center">
+                <div>
+                  <h2 class="text-xl font-semibold"><%= index + 1 %>. <%= quiz.quiz_name %></h2>
+                  <p class="text-gray-600"><%= quiz.description %></p>
+                </div>
+                <div class="my-2 text-end">
+                  <% if (quiz.user_score !== null) { %>
+                    <p class="text-green-600 mb-4 font-semibold">Your Score: <%= quiz.user_score %>%</p>
+                  <% } %>
+
+                  <% if (quiz.reattempt === 1 || quiz.user_score === null) { %>
+                    <a href="/quiz/<%= quiz.id %>" class="bg-cyan-600 text-white hover:bg-cyan-500 px-6 py-2 rounded shadow duration-300 ms-auto text-end">
+                      Take Quiz
+                    </a>
+                  <% } else { %>
+                    <span class="bg-gray-300 text-gray-800 px-4 py-2 rounded shadow">Attempted</span>
+                  <% } %>
+                </div>
+              </li>
+            <% }) %>
+          </ul>
+        <% } else { %>
+          <p>No quizzes available at the moment.</p>
+        <% } %>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // JavaScript to toggle the mobile menu
+    document.getElementById('menu-toggle').addEventListener('click', function() {
+      const menu = document.getElementById('menu');
+      menu.classList.toggle('hidden');
+    });
+  </script>
+</body>
+</html>

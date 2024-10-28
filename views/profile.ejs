@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= user.name %></title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="shortcut icon" href="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTAQHwjXyAiIxUCnh3-cFywq0K4ZmDFo20YAw&s">
+
+</head>
+<body class="bg-gray-100 text-white">
+
+  <!-- Navbar -->
+  <nav class="bg-gray-800 p-4">
+    <div class="max-w-screen-xl p-2 sm:px-16 mx-auto flex justify-between items-center">
+        <div class="flex items-center space-x-4">
+            <a href="/" class="text-white text-lg font-semibold">
+              <a href="/" class="text-white text-lg font-semibold">
+                <img src="https://brainteaser.health/wp-content/uploads/2021/02/Brainteaser_LogoVertical_White.png" width="60px" alt="">
+              </a>
+            </a>
+        </div>
+        <div class="hidden md:flex items-center space-x-4 text-lg">
+            <a href="/" class="text-gray-300 hover:text-white">Home</a>
+            <% if (user && user.role !== 'user') { %>  
+            <a href="/admin/quiz" class="text-gray-300 hover:text-white">Admin</a>
+            <% } %>
+            <a href="/leaderboard" class="text-gray-300 hover:text-white">Results</a>
+            <a href="/profile" class="text-gray-300 hover:text-white">Profile</a>
+            <a href="/logout" class="text-gray-300 hover:text-white">Logout</a>
+        </div>
+        <div class="md:hidden">
+            <button id="menu-toggle" class="text-gray-300 focus:outline-none">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+                </svg>
+            </button>
+        </div>
+    </div>
+    <div id="menu" class="hidden md:hidden flex flex-col space-y-2 mt-2">
+        <a href="#" class="text-gray-300 hover:text-white">Home</a>
+        <a href="#quiz" class="text-gray-300 hover:text-white">Quiz</a>
+        <a href="#results" class="text-gray-300 hover:text-white">Results</a>
+        <a href="#feedback" class="text-gray-300 hover:text-white">Feedback</a>
+        <a href="#profile" class="text-gray-300 hover:text-white">Profile</a>
+    </div>
+  </nav>
+  
+  <!-- Profile Section -->
+  <section class="max-w-screen-xl px-16 py-8 mx-auto">
+    <div class="w-1/2 mx-auto bg-white shadow-md rounded-lg p-8 flex justify-between items-center">
+      <div>
+        <h1 class="text-2xl font-semibold mb-6 text-gray-800">User Profile</h1>
+        <ul class="font-semibold text-gray-800">
+          <li><span>Email:</span> <%= user.email %></li>
+          <li><span class="">Phone:</span> <%= user.phone %></li>
+          <li><span class="">Role:</span> <%= user.role %></li>
+          <li><span class="">Gender:</span> <%= user.gender %></li>
+          <li><span class="">Location:</span> <%= user.location %></li>
+        </ul>
+      </div>
+    
+    </div>
+    <a href="/" class="w-1/2 mx-auto block mt-6 bg-gray-600 text-white hover:bg-gray-700 duration-300 px-8 py-2 rounded text-center">Back to Home</a>
+
+  </section>
+</body>
+</html>

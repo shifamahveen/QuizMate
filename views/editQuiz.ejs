@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Quiz</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="shortcut icon" href="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTAQHwjXyAiIxUCnh3-cFywq0K4ZmDFo20YAw&s">
+</head>
+<body class="bg-gray-100 ">
+    <nav class="bg-gray-800 p-4">
+        <div class="max-w-screen-xl p-2 sm:px-16 mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+                <a href="/" class="text-white text-lg font-semibold">
+                  <a href="/" class="text-white text-lg font-semibold">
+                    <img src="https://brainteaser.health/wp-content/uploads/2021/02/Brainteaser_LogoVertical_White.png" width="60px" alt="">
+                  </a>
+                </a>
+            </div>
+            <div class="hidden md:flex items-center space-x-4 text-lg">
+                <a href="/" class="text-gray-300 hover:text-white">Home</a>
+                <% if (user && user.role !== 'user') { %>  
+                <a href="/admin/quiz" class="text-gray-300 hover:text-white">Admin</a>
+                <% } %>
+                <a href="/leaderboard" class="text-gray-300 hover:text-white">Results</a>
+                <a href="/profile" class="text-gray-300 hover:text-white">Profile</a>
+                <a href="/logout" class="text-gray-300 hover:text-white">Logout</a>
+            </div>
+            <div class="md:hidden">
+                <button id="menu-toggle" class="text-gray-300 focus:outline-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <div id="menu" class="hidden md:hidden flex flex-col space-y-2 mt-2">
+            <a href="#" class="text-gray-300 hover:text-white">Home</a>
+            <a href="#quiz" class="text-gray-300 hover:text-white">Quiz</a>
+            <a href="#results" class="text-gray-300 hover:text-white">Results</a>
+            <a href="#feedback" class="text-gray-300 hover:text-white">Feedback</a>
+            <a href="#profile" class="text-gray-300 hover:text-white">Profile</a>
+        </div>
+      </nav>
+
+    <div class="max-w-screen-xl p-4 sm:px-16 mx-auto">
+        <div class="bg-white p-6 rounded-lg shadow-md my-8">
+            <h2 class="text-2xl font-semibold mb-4 text-center">Edit Quiz</h2>
+            
+            <form action="/admin/quiz/<%= quizId %>/update" method="POST">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+    
+                <div class="flex space-x-8 w-100 p-4">
+                    <div class="w-3/5">
+                        <div class="mb-4">
+                            <label for="quiz_name" class="block  font-medium text-gray-700">Quiz Name</label>
+                            <input type="text" id="quiz_name" name="quiz_name" value="<%= quiz.quiz_name %>" placeholder="Quiz Name" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-200" />
+                        </div>
+            
+                        <div id="questions">
+                            <% quiz.questions.forEach((question, index) => { %>
+                                <div class="mb-4 border p-4 rounded-md">
+                                    <h3 class="font-semibold mb-2">Question <%= index + 1 %></h3>
+                                    <input type="hidden" name="questions[<%= index %>][question_id]" value="<%= question.question_id %>" />
+                                    <input type="text" name="questions[<%= index %>][question]" value="<%= question.question %>" placeholder="Question" required class="block w-full p-2 border border-gray-300 rounded-md mb-2 focus:outline-none focus:ring focus:ring-blue-200" />
+                                    <input type="text" name="questions[<%= index %>][option_a]" value="<%= question.option_a %>" placeholder="Option A" required class="block w-full p-2 border border-gray-300 rounded-md mb-2 focus:outline-none focus:ring focus:ring-blue-200" />
+                                    <input type="text" name="questions[<%= index %>][option_b]" value="<%= question.option_b %>" placeholder="Option B" required class="block w-full p-2 border border-gray-300 rounded-md mb-2 focus:outline-none focus:ring focus:ring-blue-200" />
+                                    <input type="text" name="questions[<%= index %>][option_c]" value="<%= question.option_c %>" placeholder="Option C" required class="block w-full p-2 border border-gray-300 rounded-md mb-2 focus:outline-none focus:ring focus:ring-blue-200" />
+                                    <input type="text" name="questions[<%= index %>][option_d]" value="<%= question.option_d %>" placeholder="Option D" required class="block w-full p-2 border border-gray-300 rounded-md mb-2 focus:outline-none focus:ring focus:ring-blue-200" />
+                                    <input type="text" name="questions[<%= index %>][correct_answer]" value="<%= question.correct_answer %>" placeholder="Correct Answer" required class="block w-full p-2 border border-gray-300 rounded-md mb-2 focus:outline-none focus:ring focus:ring-blue-200" />
+                                </div>
+                            <% }) %>
+                        </div>
+                    </div>
+                    <div class="bg-gray-100 rounded-lg p-4 w-2/5 h-fit">
+                         <!-- Description -->
+                        <div class="mb-4">
+                            <label for="description" class="block  font-medium text-gray-700">Description</label>
+                            <textarea id="description" name="description" placeholder="Enter quiz description" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-200"><%= quiz.description %></textarea>
+                        </div>
+    
+                        <!-- Send Email -->
+                        <div class="mb-4">
+                            <label for="send_email" class="block  font-medium text-gray-700">Send Email Notification</label>
+                            <select id="send_email" name="send_email" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-200">
+                                <option value="1" <%= quiz.send_email === 1 ? 'selected' : '' %>>Yes</option>
+                                <option value="0" <%= quiz.send_email === 0 ? 'selected' : '' %>>No</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="button" id="addQuestion" class="mb-4 w-full bg-blue-600 text-white p-2 rounded-md hover:bg-blue-500">Add Question</button>
+                <button type="submit" class="w-full bg-green-600 text-white p-2 rounded-md hover:bg-green-500">Update Quiz</button>
+            </form>
+        </div>
+    </div>
+    
+
+    <script>
+        let questionIndex = <%= quiz.questions.length %>;  
+
+        document.getElementById('addQuestion').addEventListener('click', function () {
+            const newQuestion = `
+                <div class="mb-4 border p-4 rounded-md">
+                    <input type="hidden" name="questions[${questionIndex}][question_id]" value="" />
+                    <h3 class="font-semibold mb-2">Question ${questionIndex + 1}</h3>
+                    <input type="text" name="questions[${questionIndex}][question]" placeholder="Question" required class="block w-full p-2 border border-gray-300 rounded-md mb-2 focus:outline-none focus:ring focus:ring-blue-200" />
+                    <input type="text" name="questions[${questionIndex}][option_a]" placeholder="Option A" required class="block w-full p-2 border border-gray-300 rounded-md mb-2 focus:outline-none focus:ring focus:ring-blue-200" />
+                    <input type="text" name="questions[${questionIndex}][option_b]" placeholder="Option B" required class="block w-full p-2 border border-gray-300 rounded-md mb-2 focus:outline-none focus:ring focus:ring-blue-200" />
+                    <input type="text" name="questions[${questionIndex}][option_c]" placeholder="Option C" required class="block w-full p-2 border border-gray-300 rounded-md mb-2 focus:outline-none focus:ring focus:ring-blue-200" />
+                    <input type="text" name="questions[${questionIndex}][option_d]" placeholder="Option D" required class="block w-full p-2 border border-gray-300 rounded-md mb-2 focus:outline-none focus:ring focus:ring-blue-200" />
+                    <input type="text" name="questions[${questionIndex}][correct_answer]" placeholder="Correct Answer" required class="block w-full p-2 border border-gray-300 rounded-md mb-2 focus:outline-none focus:ring focus:ring-blue-200" />
+                </div>`;
+            document.getElementById('questions').insertAdjacentHTML('beforeend', newQuestion);
+            questionIndex++;
+        });
+    </script>
+</body>
+</html>
