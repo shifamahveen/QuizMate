@@ -65,7 +65,7 @@ exports.listAllQuizzes = (req, res) => {
 
   const userId = req.session.user.id;
 
-  const query = `
+  const quizQuery = `
     SELECT 
       q.id, q.quiz_name, q.description, 
       q.reattempt, qa.score AS user_score 
@@ -77,32 +77,48 @@ exports.listAllQuizzes = (req, res) => {
       q.id = qa.quiz_id AND qa.user_id = ?
   `;
 
-  db.query(query, [userId], (err, results) => {
-    if (err) {
-      console.error('Error fetching quizzes:', err);
-      return res.status(500).send('Server error');
-    }
+  const studentCountQuery = 'SELECT COUNT(*) AS studentCount FROM users';
 
-    const quizzes = results;
+  Promise.all([
+    new Promise((resolve, reject) => {
+      db.query(studentCountQuery, (err, results) => {
+        if (err) {
+          console.error('Cannot fetch users:', err);
+          reject(err);
+        } else {
+          resolve(results[0].studentCount);
+        }
+      });
+    }),
+    new Promise((resolve, reject) => {
+      db.query(quizQuery, [userId], (err, results) => {
+        if (err) {
+          console.error('Error fetching quizzes:', err);
+          reject(err);
+        } else {
+          resolve(results);
+        }
+      });
+    })
+  ])
+  .then(([students, quizzes]) => {
     const totalQuizzes = quizzes.length;
-
-    // Filter out only attempted quizzes with a numeric user_score
     const attemptedQuizzes = quizzes.filter(quiz => quiz.user_score !== null && !isNaN(quiz.user_score));
     const quizzesAttempted = attemptedQuizzes.length;
-    
-    // Calculate average accuracy only if there are attempted quizzes
     const averageAccuracy = quizzesAttempted > 0
       ? attemptedQuizzes.reduce((sum, quiz) => sum + Number(quiz.user_score), 0) / quizzesAttempted
       : 0;
 
     res.render('publicquiz', { 
       quizzes, 
+      students,
       totalQuizzes, 
       quizzesAttempted, 
       averageAccuracy: averageAccuracy.toFixed(2), 
       user: req.session.user 
     });
-  });
+  })
+  .catch(err => res.status(500).send('Server error'));
 };
 
 // admin method to list all quizzes
@@ -110,10 +126,17 @@ exports.listQuiz = (req, res) => {
   if (!req.session.user) {
     return res.redirect('/login');
   }
-  if(req.session.user.role === "user") {
+  if (req.session.user.role === "user") {
     return res.redirect('/');
   }
-  const query = 'SELECT * FROM quizzes';
+
+  const query = `
+    SELECT q.id, q.quiz_name, q.description, 
+           COUNT(qa.id) AS attempts 
+    FROM quizzes q
+    LEFT JOIN quiz_attempts qa ON q.id = qa.quiz_id
+    GROUP BY q.id, q.quiz_name, q.description
+  `;
 
   db.query(query, (err, results) => {
     if (err) {
@@ -121,10 +144,30 @@ exports.listQuiz = (req, res) => {
       return res.status(500).send('Server error');
     }
 
-    // Render the view and pass the quizzes to the frontend
     res.render('quiz', { quizzes: results, user: req.session.user, csrfToken: req.csrfToken() });
   });
 };
+
+exports.getQuizAttempts = (req, res) => {
+  const quizId = req.params.id;
+
+  const query = `
+    SELECT qa.id, u.name AS username, qa.score, qa.attempt_date
+    FROM quiz_attempts qa
+    INNER JOIN users u ON qa.user_id = u.id
+    WHERE qa.quiz_id = ?;
+  `;
+
+  db.query(query, [quizId], (err, results) => {
+    if (err) {
+      console.error('Error fetching attempts:', err);
+      return res.status(500).json({ error: 'Server error' });
+    }
+
+    res.json(results);
+  });
+};
+
 
 // Fetch quiz by ID for editing
 exports.getQuizForEdit = (req, res) => {
@@ -135,7 +178,7 @@ exports.getQuizForEdit = (req, res) => {
 
   // Fetch the quiz and its questions
   const query = `
-    SELECT quizzes.id AS quiz_id, quizzes.quiz_name AS quiz_name, questions.id AS question_id, 
+    SELECT quizzes.id AS quiz_id, quizzes.quiz_name AS quiz_name, quizzes.description, quizzes.send_email, quizzes.reattempt, questions.id AS question_id, 
            questions.question, questions.option_a, questions.option_b, 
            questions.option_c, questions.option_d, questions.correct_answer
     FROM quizzes
@@ -155,6 +198,9 @@ exports.getQuizForEdit = (req, res) => {
 
     const quiz = {
       quiz_name: results[0]?.quiz_name,
+      description: results[0]?.description,
+      send_email: results[0]?.send_email,
+      allow_reattempt: results[0]?.reattempt,
       questions: results.map((q) => ({
         question_id: q.question_id,
         question: q.question,
@@ -179,12 +225,12 @@ exports.getQuizForEdit = (req, res) => {
 // Update quiz with new data
 exports.updateQuiz = (req, res) => {
   const quizId = req.params.id;
-  const { quiz_name, description, send_email, questions } = req.body;
+  const { quiz_name, description, send_email, questions, allow_reattempt } = req.body;
 
   // Update quiz name, description, and send_email
   db.query(
-      'UPDATE quizzes SET quiz_name = ?, description = ?, send_email = ? WHERE id = ?',
-      [quiz_name, description, send_email, quizId],
+      'UPDATE quizzes SET quiz_name = ?, description = ?, send_email = ?, reattempt = ?  WHERE id = ?',
+      [quiz_name, description, send_email, allow_reattempt, quizId],
       (err) => {
           if (err) {
               console.error('Error updating quiz:', err);

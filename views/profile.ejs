@@ -47,22 +47,106 @@
   </nav>
   
   <!-- Profile Section -->
-  <section class="max-w-screen-xl px-16 py-8 mx-auto">
-    <div class="w-1/2 mx-auto bg-white shadow-md rounded-lg p-8 flex justify-between items-center">
-      <div>
+  <section class="max-w-screen-xl p-8 mx-auto">
+    <div class="w-1/2 mx-auto bg-white shadow-lg rounded-lg p-4 flex justify-between items-center">
+      <div class="container mx-auto p-6">
         <h1 class="text-2xl font-semibold mb-6 text-gray-800">User Profile</h1>
-        <ul class="font-semibold text-gray-800">
-          <li><span>Email:</span> <%= user.email %></li>
-          <li><span class="">Phone:</span> <%= user.phone %></li>
-          <li><span class="">Role:</span> <%= user.role %></li>
-          <li><span class="">Gender:</span> <%= user.gender %></li>
-          <li><span class="">Location:</span> <%= user.location %></li>
+        <ul class="text-gray-800 space-y-1">
+          <li><span class="font-semibold">Name:</span> <%= user.name %></li>
+          <li><span class="font-semibold">Email:</span> <%= user.email %></li>
+          <li><span class="font-semibold">Phone:</span> <%= user.phone %></li>
+          <li><span class="font-semibold">Role:</span> <%= user.role %></li>
+          <li><span class="font-semibold">Gender:</span> <%= user.gender %></li>
+          <li><span class="font-semibold">Location:</span> <%= user.location %></li>
         </ul>
-      </div>
-    
+        <button onclick="openEditPopup()" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded">Edit Profile</button>
+      </div>        
     </div>
-    <a href="/" class="w-1/2 mx-auto block mt-6 bg-gray-600 text-white hover:bg-gray-700 duration-300 px-8 py-2 rounded text-center">Back to Home</a>
-
+    <a href="/" class="w-1/2 mx-auto block mt-6 bg-gray-600 text-white hover:bg-gray-700 duration-300 px-8 py-2 rounded-lg text-center">Back to Home</a>
   </section>
+        
+  <!-- Popup for editing profile -->
+  <div id="editProfilePopup" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
+    <div class="bg-white p-6 px-8 rounded-lg shadow-lg w-1/3">
+      <h2 class="text-xl font-semibold mb-4">Edit Profile</h2>
+      <form id="editProfileForm" class="space-y-1">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        
+        <div>
+          <label class="block text-gray-700 font-semibold">Name:</label>
+          <input type="text" name="name" class="w-full border p-2 rounded text-gray-800" value="<%= user.name %>" required>
+        </div>
+        <div>
+          <label class="block text-gray-700 font-semibold">Email</label>
+          <input type="email" name="email" class="w-full border p-2 rounded text-gray-800" value="<%= user.email %>" required>
+        </div>
+        <div>
+          <label class="block text-gray-700 font-semibold">Phone</label>
+          <input type="text" id="phone" name="phone" class="w-full border p-2 rounded text-gray-800" value="<%= user.phone %>" required maxlength="10">
+        </div>
+        <div>
+          <label class="block text-gray-700 font-semibold">Role</label>
+          <select name="role" class="w-full border p-2 rounded text-gray-800" required>
+            <option value="user" <%= user.role === 'user' ? 'selected' : '' %>>User</option>
+            <option value="admin" <%= user.role === 'admin' ? 'selected' : '' %>>Admin</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-gray-700 font-semibold">Gender</label>
+          <select name="gender" class="w-full border p-2 rounded text-gray-800" required>
+            <option value="male" <%= user.gender === 'male' ? 'selected' : '' %>>Male</option>
+            <option value="female" <%= user.gender === 'female' ? 'selected' : '' %>>Female</option>
+            <option value="others" <%= user.gender === 'others' ? 'selected' : '' %>>Others</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-gray-700 font-semibold">Location</label>
+          <input type="text" name="location" class="w-full border p-2 rounded text-gray-800" value="<%= user.location %>" required>
+        </div>
+        
+        <div class="flex justify-end space-x-2">
+          <button type="submit" class="px-4 py-2 bg-green-500 text-white rounded">Save</button>
+          <button type="button" onclick="closeEditPopup()" class="px-4 py-2 bg-red-500 text-white rounded">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+      function openEditPopup() {
+          document.getElementById('editProfilePopup').classList.remove('hidden');
+      }
+
+      function closeEditPopup() {
+          document.getElementById('editProfilePopup').classList.add('hidden');
+      }
+
+      document.getElementById('phone').addEventListener('input', function () {
+          this.value = this.value.replace(/\D/g, '').slice(0, 10);
+      });
+
+      document.getElementById('editProfileForm').addEventListener('submit', function (event) {
+          event.preventDefault();
+
+          const formData = new FormData(this);
+
+          fetch('/profile/update', {
+              method: 'POST',
+              body: new URLSearchParams(formData),
+              headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+          })
+          .then(response => response.json())
+          .then(data => {
+              if (data.success) {
+                  alert('Profile updated successfully');
+                  location.reload();
+              } else {
+                  alert('Failed to update profile');
+              }
+          })
+          .catch(error => console.error('Error:', error));
+      });
+  </script>
+
 </body>
 </html>

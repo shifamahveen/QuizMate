@@ -36,3 +36,11 @@ exports.getUserByEmail = (email, callback) => {
     }
   });
 };
+
+exports.updateUserById = (userId, userData, callback) => {
+  db.query(
+    'UPDATE users SET name = ?, email = ?, phone = ?, role = ?, gender = ?, location = ? WHERE id = ?',
+    [userData.name, userData.email, userData.phone, userData.role, userData.gender, userData.location, userId],
+    callback
+  );
+};

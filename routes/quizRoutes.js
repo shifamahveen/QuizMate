@@ -9,6 +9,7 @@ router.get('/', quizController.listAllQuizzes);
 
 // Admin view: List all quizzes
 router.get('/admin/quiz', ensureAuthenticated, quizController.listQuiz);
+router.get('/admin/quiz/attempts/:id', quizController.getQuizAttempts);
 
 // Attempt quiz
 router.get('/quiz/:id', questionController.renderAttemptQuiz);
